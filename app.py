@@ -6,8 +6,8 @@ import plotly.graph_objects as go
 
 # --- Page Configuration ---
 st.set_page_config(
-    page_title="CO₂ Emissions Forecaster",
-    page_icon="📈",
+    page_title="CO₂ Emissions Estimation",
+    page_icon="🌍",
     layout="wide"
 )
 
@@ -27,7 +27,7 @@ def load_source_data(file_path):
 
 @st.cache_resource
 def load_model(file_path):
-    """Loads a single .pkl model file."""
+    """Generic function to load a .pkl model file."""
     if not os.path.exists(file_path):
         return None
     try:
@@ -39,95 +39,158 @@ def load_model(file_path):
         return None
 
 # --- Main Application UI ---
-st.title("📈 CO₂ Emissions: Forecast & Performance Dashboard")
+st.title("Carbon Dioxide Emissions Estimation in China")
 
 # --- Load Data and Find Models ---
-# IMPORTANT: Assumes your .pkl files are in a sub-directory named 'province_models_fixed_order'
 MODEL_DIR = 'province_models_fixed_order' 
 source_df = load_source_data('cleaned_dataset.csv')
+regression_model = load_model('gradient_boosting_model.pkl')
 
-if source_df is None or not os.path.exists(MODEL_DIR):
-    st.error(f"Required files not found. Please make sure `cleaned_dataset.csv` and the `{MODEL_DIR}` directory exist in the same folder as this app.")
-else:
-    # --- Sidebar for User Controls ---
-    st.sidebar.header("Controls")
-    province_names = sorted([f.replace('arima_model_', '').replace('.pkl', '').replace('_', ' ') for f in os.listdir(MODEL_DIR)])
-    selected_province = st.sidebar.selectbox("Select a Province", options=province_names)
-    
-    # --- Prepare file paths and data for the selected province ---
-    safe_province_name = selected_province.replace(" ", "_")
-    model_path = os.path.join(MODEL_DIR, f'arima_model_{safe_province_name}.pkl')
-    
-    final_model = load_model(model_path)
-    province_ts = source_df[source_df['name'] == selected_province][['year', 'total_carbon_dioxide_emissions_(_million_tons_)']].copy()
-    province_ts = province_ts.set_index('year')
+# --- Sidebar Navigation ---
+st.sidebar.title("Navigation")
+page = st.sidebar.radio("Go to", ["Home", "Estimate"])
 
-    if final_model is None:
-        st.error(f"Could not load the model for {selected_province}. Check if the file exists at: {model_path}")
-    else:
-        # --- Create Tabs for each visualization ---
-        tab1, tab2 = st.tabs(["Final Forecast", "Model Performance Evaluation"])
+# ==========================================================================
+# HOME PAGE
+# ==========================================================================
+if page == "Home":
+    home_tab1, home_tab2 = st.tabs(["Description", "Dataset"])
 
-        # ==========================================================================
-        # Tab 1: Final Forecast
-        # ==========================================================================
-        with tab1:
-            st.header(f"Official Forecast for {selected_province}")
-            st.markdown("This chart uses the final, pre-trained model (trained on all historical data from 1999-2019) to project future emissions.")
+    with home_tab1:
+        st.header("Project Description")
+        st.markdown("""
+        This application provides two advanced tools for analyzing and predicting Carbon Dioxide (CO₂) emissions across various provinces in China. 
+        It leverages historical data from 1999 to 2019 to build robust machine learning models.
+
+        ### Key Features:
+
+        **1. Estimation with Specific Variables (Multivariate Regression):**
+        - This tool uses a **Random Forest Regressor** model, which has been trained on the entire dataset across all provinces.
+        - It learns the complex relationships between CO₂ emissions and various socio-economic factors like GDP, population, urbanization rate, and industrial structure.
+        - This allows you to create detailed "what-if" scenarios to see how specific policy and economic changes might impact emissions.
+
+        **2. Forecasting (Univariate Time-Series):**
+        - This tool employs an **ARIMA (AutoRegressive Integrated Moving Average)** model.
+        - A unique ARIMA model has been trained for each individual province, focusing solely on its historical emissions trend.
+        - This provides a "baseline" forecast, showing where a province's emissions are headed if its historical momentum continues without major external changes.
+
+        By combining these two approaches, users can gain a comprehensive understanding of both the underlying drivers of emissions and the likely future trends.
+        """)
+
+    with home_tab2:
+        st.header("Dataset Preview")
+        st.markdown("This is the `cleaned_dataset.csv` file used for training all models.")
+        if source_df is not None:
+            st.dataframe(source_df)
+        else:
+            st.error("Dataset file not found.")
+
+# ==========================================================================
+# ESTIMATE PAGE
+# ==========================================================================
+elif page == "Estimate":
+    est_tab1, est_tab2 = st.tabs(["Estimate with Specific Variable", "Forecast"])
+
+    # --- Regression Model Tab ---
+    with est_tab1:
+        if regression_model is None or source_df is None:
+            st.error("Regression model or source data not found. Please check your files.")
+        else:
+            province_names = sorted(source_df['name'].unique())
             
-            forecast_years = st.slider("Select number of years to forecast", 5, 20, 10, key="final_fc")
+            # --- Input Form ---
+            with st.form(key='prediction_form'):
+                st.subheader("Input the correct values into the following boxes to estimate total carbon dioxide emissions")
+                
+                # Input fields laid out in columns
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    province = st.selectbox("Province", options=province_names)
+                    year = st.number_input("Year", min_value=2020, max_value=2050, value=2025)
+                    gdp = st.number_input("gdp per capita (yuan)", min_value=0)
+                with col2:
+                    population = st.number_input("Total Population (million)", min_value=0.0, format="%.2f")
+                    urbanization = st.number_input("Urbanization Rate (%)", min_value=0.0, max_value=100.0, format="%.1f")
+                    primary_ind = st.number_input("Proportion of Primary Industry (%)", min_value=0.0, max_value=100.0, format="%.1f")
+                with col3:
+                    secondary_ind = st.number_input("Proportion of Secondary Industry (%)", min_value=0.0, max_value=100.0, format="%.1f")
+                    tertiary_ind = st.number_input("Proportion of the Tertiary Industry (%)", min_value=0.0, max_value=100.0, format="%.1f")
+                    coal_prop = st.number_input("Coal Proportion (%)", min_value=0.0, max_value=100.0, format="%.1f")
+                
+                submit_button = st.form_submit_button(label='Estimate Total Carbon Dioxide Emissions')
+
+            # --- Results Display ---
+            if submit_button:
+                st.divider()
+                res_col1, res_col2 = st.columns([1, 2])
+                
+                with res_col1:
+                    st.subheader("Result")
+                    # Create DataFrame from inputs
+                    input_data = pd.DataFrame({
+                        'name': [province], 'year': [year], 'per_capita_gdp_yuan': [gdp],
+                        'total_population_million': [population], 'urbanization_rate_percent': [urbanization],
+                        'proportion_of_primary_industry_percent': [primary_ind], 'proportion_of_secondary_industry_percent': [secondary_ind],
+                        'proportion_of_the_tertiary_industry_percent': [tertiary_ind], 'coal_proportion_percent': [coal_prop]
+                    })
+                    # Make prediction
+                    prediction = regression_model.predict(input_data)[0]
+                    st.metric(label="", value=f"{prediction:,.2f} millions tons")
+                
+                with res_col2:
+                    st.subheader("Explanation")
+                    explanation_text = f"""
+                    Based on the values you input, Province **{province}** in year **{year}** has:
+                    - A GDP per capita of **{gdp:,} yuan** (Level H).
+                    - A total population of **{population} million** (Level M).
+                    - An urbanization rate of **{urbanization}%** (Level M).
+                    - A proportion of primary industry of **{primary_ind}%** (Level L).
+                    - A proportion of secondary industry of **{secondary_ind}%** (Level M).
+                    - A proportion of tertiary industry of **{tertiary_ind}%** (Level H).
+                    - A coal proportion of **{coal_prop}%** (Level M).
+
+                    It is estimated that Province **{province}** in year **{year}** produces carbon dioxide emissions of **{prediction:,.2f} million tons** at level H.
+                    """
+                    st.markdown(explanation_text)
+
+    # --- ARIMA Forecast Tab ---
+    with est_tab2:
+        if not os.path.exists(MODEL_DIR) or source_df is None:
+            st.error(f"ARIMA model directory '{MODEL_DIR}' or source data not found.")
+        else:
+            st.subheader("Input the correct values into the following boxes to estimate total carbon dioxide emissions")
+            arima_province_names = sorted([f.replace('arima_model_', '').replace('.pkl', '').replace('_', ' ') for f in os.listdir(MODEL_DIR)])
             
-            # Generate forecast from the final model
-            forecast = final_model.get_forecast(steps=forecast_years)
-            forecast_df = forecast.summary_frame(alpha=0.05)
+            fc_province = st.selectbox("Province", options=arima_province_names, key="forecast_province")
+            fc_years = st.slider("Select number of years to forecast", 5, 20, 10)
+
+            # Load the correct model and generate forecast
+            safe_province_name = fc_province.replace(" ", "_")
+            model_path = os.path.join(MODEL_DIR, f'arima_model_{safe_province_name}.pkl')
+            arima_model = load_model(model_path)
             
-            # Create correct index for the forecast
-            last_year = province_ts.index.max()
-            forecast_df.index = range(last_year + 1, last_year + 1 + len(forecast_df))
-            forecast_df.index.name = 'Year'
+            if arima_model:
+                province_ts = source_df[source_df['name'] == fc_province][['year', 'total_carbon_dioxide_emissions_(_million_tons_)']].copy()
+                province_ts = province_ts.set_index('year')
 
-            # Create Plotly figure
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(x=province_ts.index, y=province_ts.iloc[:, 0], mode='lines', name='Historical Emissions'))
-            fig.add_trace(go.Scatter(x=forecast_df.index, y=forecast_df['mean'], mode='lines', name='Forecasted Emissions', line=dict(dash='dash')))
-            fig.add_trace(go.Scatter(x=forecast_df.index, y=forecast_df['mean_ci_upper'], fill='tonexty', mode='none', name='95% Confidence Interval', fillcolor='rgba(255, 75, 75, 0.2)'))
-            fig.add_trace(go.Scatter(x=forecast_df.index, y=forecast_df['mean_ci_lower'], fill='tonexty', mode='none', showlegend=False, fillcolor='rgba(255, 75, 75, 0.2)'))
+                forecast = arima_model.get_forecast(steps=fc_years)
+                forecast_df = forecast.summary_frame(alpha=0.05)
+                
+                last_year = province_ts.index.max()
+                forecast_df.index = range(last_year + 1, last_year + 1 + len(forecast_df))
+                forecast_df.index.name = 'Year'
 
-            fig.update_layout(title=f"Final Forecast for {selected_province}", xaxis_title="Year", yaxis_title="Emissions (Million Tons)")
-            st.plotly_chart(fig, use_container_width=True)
-
-        # ==========================================================================
-        # Tab 2: Model Performance Evaluation
-        # ==========================================================================
-        with tab2:
-            st.header(f"Performance Evaluation for {selected_province}")
-            st.markdown("This chart shows how the model would have performed on the last 3 years of data (2017-2019). The model is trained only on data up to 2016 and then used to forecast, allowing us to compare its prediction to the known, actual values.")
-
-            # Split data into training and test sets
-            train_data = province_ts.iloc[:-3]
-            test_data = province_ts.iloc[-3:]
-
-            # Temporarily train a model on the training data only
-            # This is done live for demonstration purposes
-            from statsmodels.tsa.arima.model import ARIMA
-            eval_model = ARIMA(train_data, order=(1, 1, 1))
-            eval_model_fit = eval_model.fit()
-
-            # Forecast for 8 steps: 3 for the test period + 5 future years
-            forecast_steps = len(test_data) + 5
-            eval_forecast = eval_model_fit.get_forecast(steps=forecast_steps)
-            eval_forecast_df = eval_forecast.summary_frame(alpha=0.05)
-            
-            # Create a proper index for the forecast
-            last_train_year = train_data.index.max()
-            eval_forecast_df.index = range(last_train_year + 1, last_train_year + 1 + forecast_steps)
-            eval_forecast_df.index.name = 'Year'
-
-            # Create the plot
-            fig_eval = go.Figure()
-            fig_eval.add_trace(go.Scatter(x=train_data.index, y=train_data.iloc[:, 0], mode='lines', name='Historical (Train)'))
-            fig_eval.add_trace(go.Scatter(x=test_data.index, y=test_data.iloc[:, 0], mode='lines+markers', name='Actual (Test)', line=dict(color='green')))
-            fig_eval.add_trace(go.Scatter(x=eval_forecast_df.index, y=eval_forecast_df['mean'], mode='lines', name='Forecast', line=dict(dash='dash', color='red')))
-            
-            fig_eval.update_layout(title=f"Model Evaluation for {selected_province}", xaxis_title="Year", yaxis_title="Emissions (Million Tons)")
-            st.plotly_chart(fig_eval, use_container_width=True)
+                # Create Plotly figure
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=province_ts.index, y=province_ts.iloc[:, 0], mode='lines', name='Historical Emissions'))
+                fig.add_trace(go.Scatter(x=forecast_df.index, y=forecast_df['mean'], mode='lines', name='Forecasted Emissions', line=dict(dash='dash', color='red')))
+                
+                fig.update_layout(
+                    title=f"CO₂ Emissions Forecast for {fc_province}",
+                    xaxis_title="Year",
+                    yaxis_title="Emissions (Million Tons)",
+                    showlegend=True
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.error(f"Could not load model for {fc_province}.")
