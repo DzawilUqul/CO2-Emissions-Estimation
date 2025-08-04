@@ -76,12 +76,28 @@ def get_level(value, column_name):
 
 # --- Sidebar Navigation ---
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Home", "Estimate"])
+
+# Initialize session state for page navigation if it doesn't exist
+if 'page' not in st.session_state:
+    st.session_state.page = 'Home'
+
+# Determine the type for each button based on the current page
+home_btn_type = "primary" if st.session_state.page == 'Home' else "secondary"
+est_btn_type = "primary" if st.session_state.page == 'Estimate' else "secondary"
+
+# Create buttons and update session state on click
+if st.sidebar.button("Home", use_container_width=True, type=home_btn_type):
+    st.session_state.page = 'Home'
+    st.rerun()
+if st.sidebar.button("Estimate", use_container_width=True, type=est_btn_type):
+    st.session_state.page = 'Estimate'
+    st.rerun()
+
 
 # ==========================================================================
 # HOME PAGE
 # ==========================================================================
-if page == "Home":
+if st.session_state.page == "Home":
     home_tab1, home_tab2 = st.tabs(["Description", "Dataset"])
 
     with home_tab1:
@@ -116,7 +132,7 @@ if page == "Home":
 # ==========================================================================
 # ESTIMATE PAGE
 # ==========================================================================
-elif page == "Estimate":
+elif st.session_state.page == "Estimate":
     est_tab1, est_tab2 = st.tabs(["Estimate with Specific Variable", "Forecast"])
 
     # --- Regression Model Tab ---
@@ -226,6 +242,10 @@ elif page == "Estimate":
                 
                 last_year = province_ts.index.max()
                 forecast_df.index = range(last_year + 1, last_year + 1 + len(forecast_df))
+                forecast_df.index.name = 'Year'
+
+                # FIX: Cap negative predictions at zero
+                forecast_df['mean'] = forecast_df['mean'].clip(lower=0)
                 
                 # Create Plotly figure
                 fig = go.Figure()
