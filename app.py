@@ -48,12 +48,28 @@ regression_model = load_model('gradient_boosting_model.pkl')
 
 # --- Sidebar Navigation ---
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Home", "Estimate"])
+
+# Initialize session state for page navigation if it doesn't exist
+if 'page' not in st.session_state:
+    st.session_state.page = 'Home'
+
+# Determine the type for each button based on the current page
+home_btn_type = "primary" if st.session_state.page == 'Home' else "secondary"
+est_btn_type = "primary" if st.session_state.page == 'Estimate' else "secondary"
+
+# Create buttons and update session state on click
+if st.sidebar.button("Home", use_container_width=True, type=home_btn_type):
+    st.session_state.page = 'Home'
+    st.rerun()
+if st.sidebar.button("Estimate", use_container_width=True, type=est_btn_type):
+    st.session_state.page = 'Estimate'
+    st.rerun()
+
 
 # ==========================================================================
 # HOME PAGE
 # ==========================================================================
-if page == "Home":
+if st.session_state.page == "Home":
     home_tab1, home_tab2 = st.tabs(["Description", "Dataset"])
 
     with home_tab1:
@@ -65,7 +81,7 @@ if page == "Home":
         ### Key Features:
 
         **1. Estimation with Specific Variables (Multivariate Regression):**
-        - This tool uses a **Random Forest Regressor** model, which has been trained on the entire dataset across all provinces.
+        - This tool uses a **Gradient Boosting Regressor** model, which has been trained on the entire dataset across all provinces.
         - It learns the complex relationships between CO₂ emissions and various socio-economic factors like GDP, population, urbanization rate, and industrial structure.
         - This allows you to create detailed "what-if" scenarios to see how specific policy and economic changes might impact emissions.
 
@@ -88,7 +104,7 @@ if page == "Home":
 # ==========================================================================
 # ESTIMATE PAGE
 # ==========================================================================
-elif page == "Estimate":
+elif st.session_state.page == "Estimate":
     est_tab1, est_tab2 = st.tabs(["Estimate with Specific Variable", "Forecast"])
 
     # --- Regression Model Tab ---
@@ -141,15 +157,11 @@ elif page == "Estimate":
                     st.subheader("Explanation")
                     explanation_text = f"""
                     Based on the values you input, Province **{province}** in year **{year}** has:
-                    - A GDP per capita of **{gdp:,} yuan** (Level H).
-                    - A total population of **{population} million** (Level M).
-                    - An urbanization rate of **{urbanization}%** (Level M).
-                    - A proportion of primary industry of **{primary_ind}%** (Level L).
-                    - A proportion of secondary industry of **{secondary_ind}%** (Level M).
-                    - A proportion of tertiary industry of **{tertiary_ind}%** (Level H).
-                    - A coal proportion of **{coal_prop}%** (Level M).
-
-                    It is estimated that Province **{province}** in year **{year}** produces carbon dioxide emissions of **{prediction:,.2f} million tons** at level H.
+                    - A GDP per capita of **{gdp:,} yuan**.
+                    - A total population of **{population} million**.
+                    - An urbanization rate of **{urbanization}%**.
+                    
+                    It is estimated that Province **{province}** in year **{year}** produces carbon dioxide emissions of **{prediction:,.2f} million tons**.
                     """
                     st.markdown(explanation_text)
 
@@ -158,7 +170,7 @@ elif page == "Estimate":
         if not os.path.exists(MODEL_DIR) or source_df is None:
             st.error(f"ARIMA model directory '{MODEL_DIR}' or source data not found.")
         else:
-            st.subheader("Input the correct values into the following boxes to estimate total carbon dioxide emissions")
+            st.subheader("Select a province and the number of years to generate a time-series forecast")
             arima_province_names = sorted([f.replace('arima_model_', '').replace('.pkl', '').replace('_', ' ') for f in os.listdir(MODEL_DIR)])
             
             fc_province = st.selectbox("Province", options=arima_province_names, key="forecast_province")
@@ -180,6 +192,9 @@ elif page == "Estimate":
                 forecast_df.index = range(last_year + 1, last_year + 1 + len(forecast_df))
                 forecast_df.index.name = 'Year'
 
+                # FIX: Cap negative predictions at zero
+                forecast_df['mean'] = forecast_df['mean'].clip(lower=0)
+                
                 # Create Plotly figure
                 fig = go.Figure()
                 fig.add_trace(go.Scatter(x=province_ts.index, y=province_ts.iloc[:, 0], mode='lines', name='Historical Emissions'))
