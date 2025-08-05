@@ -61,6 +61,8 @@ MODEL_DIR = 'province_models_fixed_order'
 raw_df = load_raw_data('dataset.csv')
 source_df = load_cleaned_data('cleaned_dataset.csv')
 regression_model = load_model('gradient_boosting_model.pkl')
+regression_url = "https://colab.research.google.com/drive/1lWhJU_Hje-1dOiJL3ceAsqISkQX2WK7b?usp=sharing"
+arima_url = "https://colab.research.google.com/drive/141thc0NK_SIjM0JK--x4013xN38LXvmA?usp=sharing"
 
 # --- Pre-calculate quantiles and define level function ---
 quantiles = {}
@@ -112,24 +114,16 @@ if st.session_state.page == "Home":
     home_tab1, home_tab2 = st.tabs(["Description", "Dataset Overview"])
 
     with home_tab1:
+        st.header("Background")
+        st.write("""
+            Climate change is a crucial global issue, with carbon dioxide emissions as a key driver. 
+            This analysis focuses on how economic development, population growth, and industrial structure in different regions (provinces) contribute to total carbon emissions. 
+            Understanding these factors is crucial for designing effective mitigation policies at the regional level.
+        """)
         st.header("Project Description")
         st.write("""
         This application provides two advanced tools for analyzing and predicting Carbon Dioxide (CO₂) emissions across various provinces in China. 
         It leverages historical data from 1999 to 2019 to build robust machine learning models.
-
-        ### Key Features:
-
-        **1. Estimation with Specific Variables (Multivariate Regression):**
-        - This tool uses a **Gradient Boosting Regressor** model, which has been trained on the entire dataset across all provinces.
-        - It learns the complex relationships between $CO_2$ emissions and various socio-economic factors like GDP, population, urbanization rate, and industrial structure.
-        - This allows you to create detailed "what-if" scenarios to see how specific policy and economic changes might impact emissions.
-
-        **2. Forecasting (Univariate Time-Series):**
-        - This tool employs an **ARIMA (AutoRegressive Integrated Moving Average)** model.
-        - A unique ARIMA model has been trained for each individual province, focusing solely on its historical emissions trend.
-        - This provides a "baseline" forecast, showing where a province's emissions are headed if its historical momentum continues without major external changes.
-
-        By combining these two approaches, users can gain a comprehensive understanding of both the underlying drivers of emissions and the likely future trends.
         """)
         st.divider()
         st.subheader("Key Features")
@@ -146,6 +140,8 @@ if st.session_state.page == "Home":
             - This allows you to create detailed "what-if" scenarios to see how specific policy and economic changes might impact emissions.
             """)
 
+            st.markdown("**Google Colab :** [Regression_CarbonDioxide_Emissions.ipynb](%s)" % regression_url)
+
         st.divider()
 
         # --- Feature 2 with Image ---
@@ -159,6 +155,8 @@ if st.session_state.page == "Home":
             - A unique ARIMA model has been trained for each individual province, focusing solely on its historical emissions trend.
             - This provides a "baseline" forecast, showing where a province's emissions are headed if its historical momentum continues without major external changes.
             """)
+
+            st.markdown("**Google Colab :** [ARIMA_Forecasting_CarbonDioxide_Emissions.ipynb](%s)" % arima_url)
         
         st.divider()
         st.markdown("By combining these two approaches, users can gain a comprehensive understanding of both the underlying drivers of emissions and the likely future trends.")
