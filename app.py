@@ -39,7 +39,7 @@ def load_model(file_path):
         return None
 
 # --- Main Application UI ---
-st.title("Carbon Dioxide (CO₂) Emissions Estimation in China")
+st.image("Header_Colab.png")
 
 # --- Load Data and Find Models ---
 MODEL_DIR = 'province_models_fixed_order' 
@@ -102,24 +102,41 @@ if st.session_state.page == "Home":
 
     with home_tab1:
         st.header("Project Description")
-        st.markdown("""
+        st.write("""
         This application provides two advanced tools for analyzing and predicting Carbon Dioxide (CO₂) emissions across various provinces in China. 
         It leverages historical data from 1999 to 2019 to build robust machine learning models.
-
-        ### Key Features:
-
-        **1. Estimation with Specific Variables (Multivariate Regression):**
-        - This tool uses a **Gradient Boosting Regressor** model, which has been trained on the entire dataset across all provinces.
-        - It learns the complex relationships between CO₂ emissions and various socio-economic factors like GDP, population, urbanization rate, and industrial structure.
-        - This allows you to create detailed "what-if" scenarios to see how specific policy and economic changes might impact emissions.
-
-        **2. Forecasting (Univariate Time-Series):**
-        - This tool employs an **ARIMA (AutoRegressive Integrated Moving Average)** model.
-        - A unique ARIMA model has been trained for each individual province, focusing solely on its historical emissions trend.
-        - This provides a "baseline" forecast, showing where a province's emissions are headed if its historical momentum continues without major external changes.
-
-        By combining these two approaches, users can gain a comprehensive understanding of both the underlying drivers of emissions and the likely future trends.
         """)
+        st.divider()
+        st.subheader("Key Features")
+
+        # --- Feature 1 with Image ---
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            st.image("Regression.png")
+        with col2:
+            st.markdown("""
+            **1. Estimation with Specific Variables (Multivariate Regression):**
+            - This tool uses a **Gradient Boosting Regressor** model, which has been trained on the entire dataset across all provinces.
+            - It learns the complex relationships between CO₂ emissions and various socio-economic factors like GDP, population, urbanization rate, and industrial structure.
+            - This allows you to create detailed "what-if" scenarios to see how specific policy and economic changes might impact emissions.
+            """)
+
+        st.divider()
+
+        # --- Feature 2 with Image ---
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            st.image("forecasting.jpg", )
+        with col2:
+            st.markdown("""
+            **2. Forecasting (Univariate Time-Series):**
+            - This tool employs an **ARIMA (AutoRegressive Integrated Moving Average)** model.
+            - A unique ARIMA model has been trained for each individual province, focusing solely on its historical emissions trend.
+            - This provides a "baseline" forecast, showing where a province's emissions are headed if its historical momentum continues without major external changes.
+            """)
+        
+        st.divider()
+        st.markdown("By combining these two approaches, users can gain a comprehensive understanding of both the underlying drivers of emissions and the likely future trends.")
 
     with home_tab2:
         st.header("Dataset Preview")
@@ -226,7 +243,7 @@ elif st.session_state.page == "Estimate":
             ])
             
             fc_province = st.selectbox("Province", options=arima_province_names, key="forecast_province")
-            fc_years = st.slider("Select number of years to forecast", 5, 30, 10, key="forecast_years")
+            fc_years = st.slider("Select number of years to forecast", 1, 5, 3, key="forecast_years")
 
             # Load the correct model and generate forecast
             safe_province_name = fc_province.replace(" ", "_")
