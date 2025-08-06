@@ -116,13 +116,13 @@ if st.session_state.page == "Home":
     with home_tab1:
         st.header("Background")
         st.write("""
-            Climate change is a crucial global issue, with carbon dioxide emissions as a key driver. 
+            Climate change is a crucial global issue, with carbon dioxide (CO₂) emissions as a key driver. 
             This analysis focuses on how economic development, population growth, and industrial structure in different regions (provinces) contribute to total carbon emissions. 
             Understanding these factors is crucial for designing effective mitigation policies at the regional level.
         """)
         st.header("Project Description")
         st.write("""
-        This application provides two advanced tools for analyzing and predicting Carbon Dioxide (CO₂) emissions across various provinces in China. 
+        This application provides two advanced tools for analyzing and predicting CO₂ emissions across various provinces in China. 
         It leverages historical data from 1999 to 2019 to build robust machine learning models.
         """)
         st.divider()
@@ -134,7 +134,7 @@ if st.session_state.page == "Home":
             st.image("Regression.png")
         with col2:
             st.markdown("""
-            **1. Estimation with Specific Variables (Multivariate Regression):**
+            **1. Estimation with Specific Variables (Regression):**
             - This tool uses a **Gradient Boosting Regressor** model, which has been trained on the entire dataset across all provinces.
             - It learns the complex relationships between CO₂ emissions and various socio-economic factors like GDP, population, urbanization rate, and industrial structure.
             - This allows you to create detailed "what-if" scenarios to see how specific policy and economic changes might impact emissions.
@@ -150,9 +150,9 @@ if st.session_state.page == "Home":
             st.image("forecasting.jpg", )
         with col2:
             st.markdown("""
-            **2. Forecasting (Univariate Time-Series):**
+            **2. Forecasting (Time-Series):**
             - This tool employs an **ARIMA (AutoRegressive Integrated Moving Average)** model.
-            - A unique ARIMA model has been trained for each individual province, focusing solely on its historical emissions trend.
+            - A unique ARIMA model has been trained for each individual province, focusing solely on its historical emissions trend
             - This provides a "baseline" forecast, showing where a province's emissions are headed if its historical momentum continues without major external changes.
             """)
 
@@ -175,7 +175,7 @@ if st.session_state.page == "Home":
                 - **DOI**: [10.17632/rp3f7mdjxz.1](https://doi.org/10.17632/rp3f7mdjxz.1)
                 
                 ### General Description
-                This is a panel dataset containing socio-economic and carbon dioxide emissions data from 31 provinces in China over a 21-year period (1999 to 2019). In total, there are 651 rows of data, which is the product of 31 provinces multiplied by 21 years of observations.
+                This is a panel dataset containing socio-economic and carbon dioxide (CO₂) emissions data from 31 provinces in China over a 21-year period (1999 to 2019). In total, there are 651 rows of data, which is the product of 31 provinces multiplied by 21 years of observations.
 
                 ### Column Descriptions
                 - **`Name`**: The name of the province in China.
@@ -187,7 +187,7 @@ if st.session_state.page == "Home":
                 - **`proportion of secondary industry(%)`**: The percentage contribution of the secondary sector (e.g., industry) to GDP.
                 - **`proportion of the tertiary industry(%)`**: The percentage contribution of the tertiary sector (e.g., services) to GDP.
                 - **`coal proportion(%)`**: The percentage of coal use in total energy consumption.
-                - **`Total carbon dioxide emissions (million tons)`**: The total CO2 emissions in million tons. This is the **target variable**.
+                - **`Total carbon dioxide emissions (million tons)`**: The total CO₂ emissions in million tons. This is the **target variable**.
                 """)
 
             with st.expander("1. Raw Dataset Preview", expanded=False):
@@ -215,8 +215,8 @@ if st.session_state.page == "Home":
                 #### d. Handling Extreme Outliers
                 Boxplots revealed one extreme outlier in `proportion_of_primary_industry_percent` and one in `proportion_of_secondary_industry_percent`. These outliers could skew the model.
                 - **Strategy**: Instead of removing the rows, the outlier values were replaced with the **average value for that specific province**, calculated from its other years of data. This preserves the data point while correcting the anomalous value.
-                  - For **Beijing** (1999), the primary industry proportion of `0.00` was replaced with its provincial average of `1.03`.
-                  - For **Shanghai** (1999), the secondary industry proportion of `98.90` was replaced with its provincial average of `51.99`.
+                  - For **Shannxi** (2007), the primary industry proportion of `-477.60` was replaced with its provincial average of `10.96`.
+                  - For **Shannxi** (2007), the secondary industry proportion of `543.00` was replaced with its provincial average of `49.56`.
 
                 After these steps, the dataset was clean, complete, and ready for analysis.
                 """)
@@ -242,21 +242,21 @@ if st.session_state.page == "Home":
                 st.plotly_chart(fig_heatmap, use_container_width=True)
 
 
-                st.subheader("National $CO_2$ Emissions Trend (1999-2019)")
+                st.subheader("National CO₂ Emissions Trend (1999-2019)")
                 st.markdown("This chart aggregates the emissions from all provinces to show the overall trend in China over two decades.")
 
                 total_emissions_by_year = source_df.groupby('year')['total_emissions'].sum().reset_index()
                 fig_total_trend = px.line(total_emissions_by_year, x='year', y='total_emissions',
-                                          title='Total National $CO_2$ Emissions Over Time', markers=True,
+                                          title='Total National CO₂ Emissions Over Time', markers=True,
                                           labels={'year': 'Year', 'total_emissions': 'Total Emissions (Million Tons)'})
                 st.plotly_chart(fig_total_trend, use_container_width=True)
 
 
-                st.subheader("$CO_2$ Emissions Trend per Province")
+                st.subheader("CO₂ Emissions Trend per Province")
                 st.markdown("This chart compares the emissions trends of all provinces. You can click on items in the legend to hide or show specific provinces.")
                 
                 fig_all_provinces = px.line(source_df, x='year', y='total_emissions', color='name',
-                                   title='$CO_2$ Emissions for All Provinces (1999-2019)', markers=False,
+                                   title='CO₂ Emissions for All Provinces (1999-2019)', markers=False,
                                    labels={'year': 'Year', 'total_emissions': 'Emissions (Million Tons)', 'name': 'Province'})
                 
                 fig_all_provinces.update_xaxes(
@@ -290,7 +290,7 @@ if st.session_state.page == "Home":
 # ESTIMATE PAGE
 # ==========================================================================
 elif st.session_state.page == "Estimate":
-    est_tab1, est_tab2 = st.tabs(["Estimate with Specific Variable", "Forecast"])
+    est_tab1, est_tab2 = st.tabs(["Factor-Based Estimation", "Historical Trend Forecast"])
 
     with est_tab1:
         if regression_model is None or source_df is None:
@@ -299,7 +299,7 @@ elif st.session_state.page == "Estimate":
             province_names = sorted(source_df['name'].unique())
             
             with st.form(key='prediction_form'):
-                st.subheader("Input the values below to estimate total carbon dioxide emissions")
+                st.subheader("Input the values below to estimate total CO₂ emissions")
                 
                 col1, col2, col3 = st.columns(3)
                 with col1:
@@ -335,7 +335,7 @@ elif st.session_state.page == "Estimate":
                     input_data_df = pd.DataFrame(input_data_dict)
                     
                     prediction = regression_model.predict(input_data_df)[0]
-                    st.metric(label=f"Estimated CO₂ Emissions for {province}", value=f"{prediction:,.2f} million tons")
+                    st.metric(label=f"Estimated CO₂ Emissions for {province}", value=f"{prediction:,.2f} million tons", width="content")
                 
                 with res_col2:
                     st.subheader("Explanation")
@@ -361,7 +361,7 @@ elif st.session_state.page == "Estimate":
                     - A coal proportion of **{coal_prop:.1f}%** is at **Level {coal_level}**.
 
                     ---
-                    The model estimates that these factors would result in carbon dioxide emissions of **{prediction:,.2f} million tons**, which corresponds to **Level {prediction_level}** compared to historical data.
+                    The model estimates that these factors would result in CO₂ emissions of **{prediction:,.2f} million tons**, which corresponds to **Level {prediction_level}** compared to historical data.
                     """
                     st.markdown(explanation_text)
                     st.caption("Level L: Low (below 25th percentile), M: Medium (between 25th-75th), H: High (above 75th percentile)")
@@ -370,7 +370,7 @@ elif st.session_state.page == "Estimate":
         if not os.path.exists(MODEL_DIR) or source_df is None:
             st.error(f"ARIMA model directory '{MODEL_DIR}' or source data not found.")
         else:
-            st.subheader("Select a province and the number of years to forecast its $CO_2$ emissions trend.")
+            st.subheader("Select a province and the number of years to forecast its CO₂ emissions trend")
             
             arima_province_names = sorted([
                 f.replace('arima_model_', '').replace('.pkl', '').replace('_', ' ') 
@@ -402,7 +402,7 @@ elif st.session_state.page == "Estimate":
                 fig.add_trace(go.Scatter(x=forecast_df.index, y=forecast_df['mean_ci_lower'], fill='tonexty', fillcolor='rgba(255, 82, 82, 0.2)', line=dict(color='rgba(255,255,255,0)'), showlegend=False))
                 
                 fig.update_layout(
-                    title=f"$CO_2$ Emissions Forecast for {fc_province}",
+                    title=f"CO₂ Emissions Forecast for {fc_province}",
                     xaxis_title="Year",
                     yaxis_title="Emissions (Million Tons)",
                     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
